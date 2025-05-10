@@ -10,6 +10,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Database connection
+
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
@@ -19,13 +21,15 @@ def get_db_connection():
         port=int(os.getenv("DB_PORT", 3306))
     )
 
+
 @app.route("/upload", methods=["POST"])
 def upload_pdf():
     if 'file' not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
 
     file = request.files['file']
-    category = request.form.get("category", "Uploaded")  # Optional form field, defaults to 'Uploaded'
+    # Optional form field, defaults to 'Uploaded'
+    category = request.form.get("category", "Uploaded")
 
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
@@ -42,16 +46,17 @@ def upload_pdf():
         # Process the PDF with explicit category
         process_pdf(temp_pdf_path, lang="eng+deu", category=category)
 
-        return jsonify({"message": f"✅ '{file.filename}' uploaded and processed successfully under category '{category}'"}), 200
+        return jsonify({"message": f"'{file.filename}' uploaded and processed successfully under category '{category}'"}), 200
 
     except Exception as e:
         return jsonify({"error": f"Processing failed: {str(e)}"}), 500
 
-    
+
 @app.route("/validate", methods=["POST"])
 def validate_pdf():
     # Placeholder: Will implement validation logic later
-    return jsonify({"message": "✅ Validate endpoint hit, logic to be implemented."}), 200
+    return jsonify({"message": "Validate endpoint hit, logic to be implemented."}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True)
