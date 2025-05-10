@@ -23,33 +23,47 @@ def get_db_connection():
 
 
 @app.route("/upload", methods=["POST"])
-def upload_pdf():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
+def upload_pdfs():
+    if 'file[]' not in request.files:
+        return jsonify({"error": "No files found in 'file[]'"}), 400
 
-    file = request.files['file']
-    # Optional form field, defaults to 'Uploaded'
+    files = request.files.getlist('file[]')
     category = request.form.get("category", "Uploaded")
 
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
 
-    if not file.filename.lower().endswith(".pdf"):
-        return jsonify({"error": "Only PDF files are allowed"}), 400
+    successful_count = 0
+    errors = []
 
-    try:
-        # Save uploaded file to a temp location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
-            temp_pdf.write(file.read())
-            temp_pdf_path = temp_pdf.name
+    for file in files:
+        if file.filename == '':
+            errors.append({"filename": None, "error": "Empty filename"})
+            continue
 
-        # Process the PDF with explicit category
-        process_pdf(temp_pdf_path, lang="eng+deu", category=category)
+        if not file.filename.lower().endswith(".pdf"):
+            errors.append({"filename": file.filename, "error": "Only PDF files are allowed"})
+            continue
 
-        return jsonify({"message": f"'{file.filename}' uploaded and processed successfully under category '{category}'"}), 200
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+                temp_pdf.write(file.read())
+                temp_pdf_path = temp_pdf.name
 
-    except Exception as e:
-        return jsonify({"error": f"Processing failed: {str(e)}"}), 500
+            # Optional: process_pdf(temp_pdf_path, lang="eng+deu", category=category)
+            successful_count += 1
+
+        except Exception as e:
+            errors.append({"filename": file.filename, "error": f"Processing failed: {str(e)}"})
+
+    response = {
+        "message": f"{successful_count} Certificate{'s' if successful_count != 1 else ''} submitted for validation"
+    }
+
+    if errors:
+        response["errors"] = errors
+
+    return jsonify(response), 200
 
 
 @app.route("/validate", methods=["POST"])
@@ -59,4 +73,4 @@ def validate_pdf():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)
