@@ -1,24 +1,24 @@
 services:
   flask:
     build:
-      context: ./backend         
-      dockerfile: Dockerfile 
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: api
     ports:
       - "5000:5000"
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_PORT=${DB_PORT}
-      - UPLOAD_DIR=/app/uploads
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: ${DB_PORT}
+      UPLOAD_DIR: /app/uploads
     volumes:
       - ./uploads:/app/uploads
     depends_on:
       - mysql
     env_file:
-      - .env 
+      - .env
     networks:
       - app-network
 
@@ -26,14 +26,15 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      MYSQL_DATABASE=${DB_NAME}
-      MYSQL_USER=${DB_USER}
-      MYSQL_PASSWORD=${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    env_file:
+      - .env
     networks:
       - app-network
 
