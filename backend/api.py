@@ -103,6 +103,7 @@ def get_validations():
         cursor.execute("""
             SELECT
                 v.id AS id,
+                p.filename AS certificate_name,
                 c.name AS category_name,
                 v.status AS status,
                 v.created_at AS date
