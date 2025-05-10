@@ -54,5 +54,4 @@ def validate_pdf():
     return jsonify({"message": "✅ Validate endpoint hit, logic to be implemented."}), 200
 
 if __name__ == "__main__":
-    initialize_db()
     app.run(debug=True)

@@ -12,8 +12,7 @@ from dotenv import load_dotenv  # Load environment variables
 load_dotenv()
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(filename='flask.log',level=logging.INFO,format='%(asctime)s - %(levelname)s - %(message)s')
 # Tesseract config
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
 os.environ['TESSDATA_PREFIX'] = os.getenv("TESSDATA_PREFIX")
