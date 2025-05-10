@@ -123,7 +123,7 @@ def process_pdf(input_pdf_path, lang='eng', category="Uncategorized"):
     for page_num, image in enumerate(images):
         logging.info(f"Processing page {page_num + 1} of {input_pdf_path}")
         try:
-            ocr_text = pytesseract.image_to_string(image, lang=lang).strip()
+            ocr_text = pytesseract.image_to_string(image, lang=lang, config='oem 1 --psm 12').strip()
         except Exception as e:
             logging.warning(f"OCR failed on page {page_num + 1}: {e}")
             ocr_text = ""
@@ -147,6 +147,7 @@ def process_pdf(input_pdf_path, lang='eng', category="Uncategorized"):
     try:
         prompt = f"Extract important structured data from the following document:\n\n{full_raw_text[:4000]}"
         ai_response = call_openrouter_api(prompt)
+        print(f"✅ AI response for {input_pdf_path}: {ai_response}")
     except Exception as e:
         logging.error(
             f"OpenRouter API call failed for {input_pdf_path}: {e}")
@@ -175,3 +176,13 @@ def process_all_pdfs_in_directory(input_dir, lang='eng'):
                 full_path = os.path.join(root, file)
                 print(f"Found PDF in '{category}': {full_path}")
                 process_pdf(full_path, lang=lang, category=category)
+
+
+# Run
+if __name__ == "__main__":
+    input_directory = r"C:\Users\MatejIvic\Downloads\Liebherr-20250509T172616Z-001\Liebherr\Casting Undercarriage"
+    languages = "eng+deu"
+
+    print("📁 Starting hybrid PDF extraction with OCR + AI...\n")
+    process_all_pdfs_in_directory(input_directory, lang=languages)
+    print("\n✅ All PDFs processed and stored in DB.")
