@@ -1,0 +1,19 @@
+.sidebar-btn {
+    border-radius: 0 !important;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    justify-content: start;
+}
+
+.sidebar-btn:hover {
+    background-color: #eaeaea;
+    color: #000;
+}
+
+.sidebar-btn.active {
+    background-color: #ffd700 !important;
+    color: #000 !important;
+    border-color: #ffd700 !important;
+}

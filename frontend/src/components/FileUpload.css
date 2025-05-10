@@ -1,0 +1,88 @@
+/* Main wrapper with subtle shadow and spacing */
+.file-upload-wrapper {
+    background-color: #ffffff;
+    border-radius: 0;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Section header styling */
+.section-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+/* File input appearance */
+.custom-file-input {
+    border-radius: 0;
+    background-color: #f5f5f5;
+    border: 1px solid #ccc;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+/* Upload button design (Liebherr yellow) */
+.btn-upload,
+.btn-custom-selected {
+    background-color: #ffd700;
+    color: black;
+    border-radius: 0;
+    font-weight: bold;
+    padding: 0.6rem 1.5rem;
+    text-transform: uppercase;
+    border: none;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-upload:hover,
+.btn-custom-selected:hover {
+    background-color: #e6c200;
+}
+
+/* Spinner adjustment */
+.spinner-border {
+    vertical-align: middle;
+}
+
+/* Upload button base style */
+.btn-upload {
+    background-color: #ffd700 !important;
+    color: black !important;
+    border-radius: 0;
+    font-weight: bold;
+    padding: 0.6rem 1.5rem;
+    text-transform: uppercase;
+    border: none;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+/* Hover */
+.btn-upload:hover {
+    background-color: #e6c200 !important;
+    color: black !important;
+}
+
+/* Active (onClick) */
+.btn-upload,
+.btn-upload:focus,
+.btn-upload:active,
+.btn-upload:visited,
+.btn-upload:focus-visible,
+.btn-upload:focus-within,
+.btn-upload:checked,
+.btn-upload:target,
+.btn-upload:focus:active {
+    background-color: #ffd700 !important;
+    color: black !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}

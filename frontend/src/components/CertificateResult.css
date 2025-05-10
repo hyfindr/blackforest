@@ -1,0 +1,19 @@
+.certificate-card {
+    border-radius: 0;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+    border: none;
+}
+
+.card-header-custom {
+    background-color: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.result-badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.8em;
+    border-radius: 0;
+    font-weight: 600;
+}
