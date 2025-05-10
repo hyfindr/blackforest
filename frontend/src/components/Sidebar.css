@@ -1,19 +1,28 @@
 .sidebar-btn {
     border-radius: 0 !important;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
     padding: 0.6rem 1rem;
     font-size: 0.95rem;
     justify-content: start;
+    background-color: #f8f9fa; /* default background */
+    color: #333;
+    border: 1px solid #ccc;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-btn:hover {
-    background-color: #eaeaea;
+    background-color: #e6e6e6;
     color: #000;
+    border-color: #aaa;
 }
 
 .sidebar-btn.active {
     background-color: #ffd700 !important;
     color: #000 !important;
     border-color: #ffd700 !important;
+}
+
+.sidebar-btn svg {
+    stroke-width: 1.5px;
 }

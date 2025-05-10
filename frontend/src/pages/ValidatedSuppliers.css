@@ -1,0 +1,47 @@
+.status-pill {
+    padding: 0.3rem 0.6rem;
+    border-radius: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.status-pill.passed {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.status-pill.failed {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.status-pill.pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-pill {
+    padding: 0.3rem 0.6rem;
+    border-radius: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.status-pill.passed {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.status-pill.failed {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.status-pill.pending {
+    background-color: #ffc107;
+    color: #000;
+}
