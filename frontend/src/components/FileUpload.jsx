@@ -1,19 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Spinner, Alert } from "react-bootstrap";
 import "./FileUpload.css";
 
-const FileUpload = () => {
+const FileUpload = ({ selectedCategory }) => {
     const [files, setFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
+    const [lastCategory, setLastCategory] = useState(selectedCategory);
+
+    // Warn or reset if category changes after file selection
+    useEffect(() => {
+        if (files.length > 0 && selectedCategory !== lastCategory) {
+            setFiles([]);
+            setStatusMessage({
+                type: "warning",
+                text: "Category changed. Please re-upload your files.",
+            });
+            setLastCategory(selectedCategory);
+        } else {
+            setLastCategory(selectedCategory);
+        }
+    }, [selectedCategory]);
 
     const handleFileChange = (e) => {
-        setFiles(Array.from(e.target.files));
+        const selectedFiles = Array.from(e.target.files);
+        setFiles(selectedFiles);
         setStatusMessage(null);
+
+        // Clear input value to allow reselecting the same file
+        e.target.value = "";
     };
 
     const handleValidate = async () => {
-        if (files.length === 0) return;
+        if (files.length === 0 || !selectedCategory) return;
 
         setUploading(true);
         setStatusMessage(null);
@@ -21,6 +40,7 @@ const FileUpload = () => {
         try {
             const formData = new FormData();
             files.forEach((file) => formData.append("file[]", file));
+            formData.append("category", selectedCategory);
 
             const res = await fetch("http://localhost:5000/upload", {
                 method: "POST",
@@ -30,7 +50,6 @@ const FileUpload = () => {
             if (!res.ok) throw new Error("Validation failed");
 
             const result = await res.json();
-
             setStatusMessage({
                 type: "success",
                 text:
@@ -44,7 +63,7 @@ const FileUpload = () => {
             });
         } finally {
             setUploading(false);
-            setFiles([]); // optionally clear after upload
+            setFiles([]);
         }
     };
 
