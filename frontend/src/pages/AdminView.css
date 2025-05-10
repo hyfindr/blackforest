@@ -1,0 +1,26 @@
+.admin-wrapper {
+    background-color: #fff;
+    padding: 2rem;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.06);
+}
+
+.section-title {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.norm-table input {
+    border-radius: 0;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .norm-table {
+        font-size: 0.85rem;
+    }
+
+    .section-title {
+        font-size: 1rem;
+    }
+}

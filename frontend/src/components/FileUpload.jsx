@@ -4,7 +4,7 @@ import CertificateResult from "./CertificateResult";
 import "./FileUpload.css";
 
 const FileUpload = () => {
-    const [file, setFile] = useState(null);
+    const [files, setFiles] = useState([]); // file -> files
     const [uploading, setUploading] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
     const [certificateData, setCertificateData] = useState(null);
@@ -66,6 +66,7 @@ const FileUpload = () => {
                 accept="application/pdf"
                 className="form-control custom-file-input mb-3"
                 onChange={handleFileChange}
+                multiple
             />
 
             <Button
