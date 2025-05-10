@@ -1,16 +1,15 @@
-import re
-import fitz  # PyMuPDF
-import mysql.connector
-from dotenv import load_dotenv
 import os
 import requests
+import mysql.connector
+from dotenv import load_dotenv
 
+# === Load environment variables ===
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-1.5-flash")  # Ensure correct model name
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-1.5-flash")
 
-# Connect to MySQL
+# === DB Connection ===
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
@@ -20,72 +19,56 @@ def get_db_connection():
         port=int(os.getenv("DB_PORT", 3306))
     )
 
-# Get extracted text from parsed PDF record
+# === Fetch raw text for given PDF ID ===
 def get_extracted_text_from_db(pdf_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT raw_extractions FROM HybridOCR_AIParsed WHERE id = %s", (pdf_id,))
+    cursor.execute("SELECT ai_extracted_data FROM parsed_pdfs WHERE id = %s", (pdf_id,))
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
 
-# Find material name from HybridOCR_AIParsed content
+# === Find matching material by name ===
 def find_material(pdf_id):
-    text = get_extracted_text_from_db(pdf_id).lower()
+    text = get_extracted_text_from_db(pdf_id)
+    print("📄 Extracted Text:", text[:1000], "...")  # Print first 100 characters for debugging
+    if text is None:
+        print(f"❌ No extracted text found for PDF ID {pdf_id}")
+        return None, None
+
+    text = text.lower()
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, grade_name FROM materials")
     materials = cursor.fetchall()
     conn.close()
+
     for material_id, grade_name in materials:
         if grade_name and grade_name.lower() in text:
             return grade_name, material_id
+
     return None, None
 
-# Fetch chemical properties for a material
-def find_chemical_properties(grade_id):
+# === Get property names ===
+def get_chemical_property_names(grade_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT element, min_value, max_value
-        FROM chemical_properties
-        WHERE grade_id = %s
-    """, (grade_id,))
-    results = cursor.fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT element FROM chemical_properties WHERE grade_id = %s", (grade_id,))
+    elements = [row[0] for row in cursor.fetchall()]
     conn.close()
-    return results
+    return elements
 
-# Fetch mechanical properties for a material
-def find_mechanical_properties(grade_id):
+def get_mechanical_property_names(grade_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT diameter, property_name, unit, min_value, max_value
-        FROM mechanical_properties
-        WHERE grade_id = %s
-    """, (grade_id,))
-    results = cursor.fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT property_name FROM mechanical_properties WHERE grade_id = %s", (grade_id,))
+    props = [row[0] for row in cursor.fetchall()]
     conn.close()
-    return results
+    return props
 
-# Extract specific values from text
-def extract_values_from_text(text, chemical_elements, mechanical_props):
-    values = {}
-    for element in chemical_elements:
-        pattern = fr"{element}\s*[:=]?\s*(\d+(\.\d+)?)(\s*%?)"
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            values[element] = match.group(1)
-
-    for prop in mechanical_props:
-        pattern = fr"{prop}\s*[:=]?\s*(\d+(\.\d+)?)(\s*\w+)?"
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            values[prop] = match.group(1)
-    return values
-
-# Call OpenRouter/Gemini
-def call_openrouter(prompt):
+# === Generic LLM call ===
+def call_openrouter_agent(prompt, system_message):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -94,80 +77,89 @@ def call_openrouter(prompt):
     body = {
         "model": OPENROUTER_MODEL,
         "messages": [
-            {"role": "system", "content": "You are a material inspector AI. Respond with only 'true' or 'false'."},
+            {"role": "system", "content": system_message},
             {"role": "user", "content": prompt}
         ]
     }
-    response = requests.post(url, json=body, headers=headers)
 
-    print("STATUS:", response.status_code)
-    print("RESPONSE TEXT:", response.text)
+    response = requests.post(url, json=body, headers=headers)
+    print("📡 OpenRouter Status:", response.status_code)
 
     if not response.ok:
+        print("❌ Error:", response.text)
         response.raise_for_status()
 
-    content = response.json()["choices"][0]["message"]["content"]
-    print("🔍 Gemini response:", content)
-    return content.strip().lower() in ["true", "yes", "1"]
+    content = response.json()["choices"][0]["message"]["content"].strip()
+    print("📥 Extracted JSON output:\n", content[:500], "...\n")
+    return content
 
-# Generate human-readable property descriptions
-def format_chemical_ranges(chemical_ranges):
-    return "\n".join(
-        f"The {item['element']} value should be between {item['min_value']} and {item['max_value']} to be valid."
-        for item in chemical_ranges
-    )
-
-def format_mechanical_ranges(mechanical_ranges):
-    return "\n".join(
-        f"The {item['property_name']} ({item['unit']}) for diameter {item['diameter']} should be between {item['min_value']} and {item['max_value']}."
-        for item in mechanical_ranges
-    )
-
-# Validate chemical and mechanical properties
-def validate_with_gemini(pdf_id):
-    material_name, grade_id = find_material(pdf_id)
-    if not grade_id:
-        print(f"❌ No matching material found for PDF ID {pdf_id}")
-        return False
-
-    chemical_ranges = find_chemical_properties(grade_id)
-    mechanical_ranges = find_mechanical_properties(grade_id)
-    extracted_text = get_extracted_text_from_db(pdf_id)
-
-    chem_text = format_chemical_ranges(chemical_ranges)
-    mech_text = format_mechanical_ranges(mechanical_ranges)
-
-    # Extracted values preview
-    chemical_elements = [item['element'] for item in chemical_ranges]
-    mechanical_props = list(set(item['property_name'] for item in mechanical_ranges))
-
-    extracted_values = extract_values_from_text(extracted_text, chemical_elements, mechanical_props)
-
-    print(f"\n📄 Material: {material_name}")
-    print(f"\n🧾 Extracted Values from Text:")
-    for k, v in extracted_values.items():
-        print(f" - {k}: {v}")
-
-    print(f"\n🧪 Chemical Property Rules:\n{chem_text}")
-    print(f"\n🔧 Mechanical Property Rules:\n{mech_text}")
-
+# === Agent for chemical properties ===
+def extract_chemical_properties(pdf_id, extracted_text, material_name, property_names):
+    prop_str = ", ".join(property_names)
     prompt = f"""
-    Here is the extracted text from a material test report for material '{material_name}':
+You are a chemical properties extraction assistant.
 
-    {extracted_text[:4000]}
+A test report has been parsed for material grade: **{material_name}**
 
-    Validate whether the chemical composition values meet the following conditions:
-    {chem_text}
+Text:
+---
+{extracted_text[:4000]}
+---
 
-    And whether the mechanical properties meet these conditions:
-    {mech_text}
+Please extract only the following chemical properties:
+{prop_str}
 
-    Respond only with 'true' or 'false'.
-    """
+Return a JSON list of objects, each with:
+- "property_name"
+- "value"
+"""
+    return call_openrouter_agent(prompt, "You are an expert in extracting chemical composition values from material test reports. Respond in JSON format.")
 
-    print(f"\n📬 Prompt sent to OpenRouter (truncated):\n{prompt[:1000]}...\n")
+# === Agent for mechanical properties ===
+def extract_mechanical_properties(pdf_id, extracted_text, material_name, property_names):
+    prop_str = ", ".join(property_names)
+    prompt = f"""
+You are a mechanical properties extraction assistant.
 
-    return call_openrouter(prompt)
+A test report has been parsed for material grade: **{material_name}**
 
-# Run validation
-print(validate_with_gemini(15))
+Text:
+---
+{extracted_text}
+---
+
+Please extract only the following mechanical properties:
+{prop_str}
+
+Return a JSON list of objects, each with:
+- "property_name"
+- "value"
+"""
+    return call_openrouter_agent(prompt, "You are an expert in extracting mechanical test values from engineering reports. Respond in JSON format.")
+
+# === Combined wrapper ===
+def extract_properties_separately(pdf_id):
+    material_name, grade_id = find_material(pdf_id)
+    if not material_name:
+        print(f"❌ No material matched for PDF ID {pdf_id}")
+        return None, None
+
+    extracted_text = get_extracted_text_from_db(pdf_id)
+    if not extracted_text:
+        print(f"❌ No text found for PDF ID {pdf_id}")
+        return None, None
+
+    chemical_props = get_chemical_property_names(grade_id)
+    mechanical_props = get_mechanical_property_names(grade_id)
+
+    chem_json = extract_chemical_properties(pdf_id, extracted_text, material_name, chemical_props) if chemical_props else "[]"
+    mech_json = extract_mechanical_properties(pdf_id, extracted_text, material_name, mechanical_props) if mechanical_props else "[]"
+
+    return chem_json, mech_json
+
+# === Run test ===
+if __name__ == "__main__":
+    test_pdf_id = 2
+    chemical, mechanical = extract_properties_separately(test_pdf_id)
+    print("\n✅ Extracted Chemical Properties:\n", chemical)
+    print("\n✅ Extracted Mechanical Properties:\n", mechanical)
