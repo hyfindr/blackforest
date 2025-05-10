@@ -1,0 +1,37 @@
+.category-selector-wrapper {
+    background: #ffffff;
+    border-radius: 0;
+    padding: 1.5rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Tüm butonlar için ortak stil */
+.category-btn {
+    border-radius: 0 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    transition: background-color 0.2s ease;
+}
+
+/* Hover efekti */
+.category-btn:hover {
+    background-color: #eaeaea;
+    color: black;
+}
+
+/* Seçili (aktif) buton */
+.category-btn.active {
+    background-color: #ffd700 !important;
+    color: black !important;
+    border-color: #ffd700 !important;
+}
