@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import mysql.connector
 import os
 from werkzeug.utils import secure_filename
@@ -9,7 +10,7 @@ import tempfile
 load_dotenv()
 
 app = Flask(__name__)
-
+CORS(app)
 # Database connection
 
 
