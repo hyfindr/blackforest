@@ -1,0 +1,36 @@
+name: CI/CD - Deploy on push to main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install SSH key
+        run: |
+          echo "${{ secrets.CI_CD }}" > deploy_key
+          chmod 600 deploy_key
+
+      - name: Deploy to remote server
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          ssh -i deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+            set -e
+            cd /home/hacker/app/dev/aipd-search-ui
+            git pull origin main
+            docker compose down
+            docker compose pull
+            docker compose up -d --remove-orphans
+          EOF
+
+      - name: Clean up
+        run: rm -f deploy_key
