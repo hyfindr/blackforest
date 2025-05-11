@@ -32,7 +32,6 @@ Validating supplier certificates is currently manual and inefficient, affecting 
 | Frontend    | React + Vite + Bootstrap |
 | Backend     | Flask (Python)         |
 | Database    | MySQL                  |
-| DevOps      | GitHub                 |
 
 ![image](https://github.com/user-attachments/assets/71a75acf-6374-4a82-8605-860f47adef17)
 
