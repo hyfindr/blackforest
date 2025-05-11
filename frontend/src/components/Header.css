@@ -2,9 +2,21 @@
     background-color: #ffffff;
     height: 64px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1050;
+    position: sticky;
+    top: 0;
 }
 
 .liebherr-logo {
-    height: 40px;
+    height: 20px;
     width: auto;
+}
+
+/* Mobile hamburger button style (inside Header.jsx) */
+@media (max-width: 767.98px) {
+    .app-header .btn {
+        padding: 0.25rem 0.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ccc;
+    }
 }

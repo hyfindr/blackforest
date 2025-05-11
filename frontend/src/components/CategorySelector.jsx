@@ -2,7 +2,7 @@ import React from "react";
 import { ButtonGroup, Button } from "react-bootstrap";
 import "./CategorySelector.css";
 
-const categories = ["Pins", "Attachment", "Undercarriage"];
+const categories = ["Pins", "Casting Attachment", "Casting Under carriage"];
 
 const CategorySelector = ({ selected, onSelect }) => {
     return (

@@ -1,44 +1,66 @@
-import "./App.css";
 import React, { useState } from "react";
-import { Paperclip, Package, User } from "lucide-react"; // or Bootstrap Icons
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
+} from "react-router-dom";
 
+import "./App.css";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import UserView from "./pages/UserView";
 import AdminView from "./pages/AdminView";
+import ValidatedSuppliers from "./pages/ValidatedSuppliers";
+import ValidationDetails from "./pages/ValidationDetails";
 
 const App = () => {
-    const [role, setRole] = useState("User");
+    const [showSidebar, setShowSidebar] = useState(false);
+
+    const toggleSidebar = () => setShowSidebar((prev) => !prev);
 
     return (
-        <div className="d-flex flex-column min-vh-100">
-            {/* Header */}
-            <Header companyName="LIEBHERR" />
+        <Router>
+            <div className="d-flex flex-column min-vh-100">
+                {/* Top Header */}
+                <Header
+                    companyName="LIEBHERR"
+                    onToggleSidebar={toggleSidebar}
+                />
 
-            {/* Main content area */}
-            <div className="container-fluid flex-grow-1">
-                <div className="row h-100">
-                    {/* Sidebar */}
-                    <nav
-                        id="sidebarMenu"
-                        className="col-md-3 col-lg-2 bg-body-tertiary sidebar p-3 min-vh-100"
-                    >
-                        <Sidebar currentRole={role} onChangeRole={setRole} />
-                    </nav>
-
-                    {/* Main panel */}
-                    <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                        <div className="pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center">
-                            <h1 className="h3 mb-0">
-                                {role === "User" ? "User Panel" : "Admin Panel"}
-                            </h1>
+                <div className="container-fluid flex-grow-1">
+                    <div className="row h-100">
+                        {/* Sidebar (visible on desktop, slide-out on mobile) */}
+                        <div className="col-12 col-md-4 col-lg-3 p-2">
+                            <Sidebar
+                                showSidebar={showSidebar}
+                                toggleSidebar={toggleSidebar}
+                            />
                         </div>
 
-                        {role === "User" ? <UserView /> : <AdminView />}
-                    </main>
+                        {/* Main Content */}
+                        <main className="col-12 col-md-8 col-lg-9 px-md-4 py-4">
+                            <Routes>
+                                <Route
+                                    path="/"
+                                    element={<Navigate to="/upload" />}
+                                />
+                                <Route path="/upload" element={<UserView />} />
+                                <Route path="/admin" element={<AdminView />} />
+                                <Route
+                                    path="/validations"
+                                    element={<ValidatedSuppliers />}
+                                />
+                                <Route
+                                    path="/details/:id"
+                                    element={<ValidationDetails />}
+                                />
+                            </Routes>
+                        </main>
+                    </div>
                 </div>
             </div>
-        </div>
+        </Router>
     );
 };
 

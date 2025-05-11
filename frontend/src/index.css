@@ -24,11 +24,6 @@ a:hover {
     color: #fff8dc !important;
 }
 
-.form-control:focus {
-    border-color: #e0ac00 !important; /* Stronger yellow tone for visibility */
-    box-shadow: 0 0 0 0.06rem #e0ac00 !important; /* Soft yellow glow */
-}
-
 /* Remove the flex centering so Bootstrap can handle layout */
 /*
 body {
@@ -65,6 +60,6 @@ h3 {
         background-color: #ffffff;
     }
     a:hover {
-        color: #747bff;
+        color: #fff8dc !important;
     }
 }
