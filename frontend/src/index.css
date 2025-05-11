@@ -17,11 +17,11 @@
 
 a {
     font-weight: 500;
-    color: #646cff;
+    color: #fff8dc !important;
     text-decoration: inherit;
 }
 a:hover {
-    color: #535bf2;
+    color: #fff8dc !important;
 }
 
 /* Remove the flex centering so Bootstrap can handle layout */
@@ -60,6 +60,6 @@ h3 {
         background-color: #ffffff;
     }
     a:hover {
-        color: #747bff;
+        color: #fff8dc !important;
     }
 }

@@ -5,7 +5,7 @@
     padding: 0.6rem 1rem;
     font-size: 0.95rem;
     justify-content: start;
-    background-color: #f8f9fa; /* default background */
+    background-color: #f8f9fa;
     color: #333;
     border: 1px solid #ccc;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -25,4 +25,57 @@
 
 .sidebar-btn svg {
     stroke-width: 1.5px;
+}
+
+/* Sidebar wrapper (slide menu) */
+.sidebar-wrapper {
+    transition: left 0.3s ease;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar-wrapper {
+        position: fixed;
+        top: 64px; /* height of header */
+        left: -100%;
+        width: 80%;
+        height: calc(100vh - 64px);
+        background-color: #fff;
+        z-index: 1040;
+        padding: 1rem;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-wrapper.open {
+        left: 0;
+    }
+
+    .sidebar-btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+.sidebar-wrapper {
+    position: static;
+    display: block;
+    min-width: 240px;
+    height: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar-wrapper {
+        position: fixed;
+        top: 64px; /* header yüksekliği */
+        left: -100%;
+        height: calc(100vh - 64px);
+        width: 80%;
+        background: white;
+        z-index: 1040;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-wrapper.open {
+        left: 0;
+    }
 }
