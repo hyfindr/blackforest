@@ -6,6 +6,10 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from pdf_parser import process_pdf
 import tempfile
+import pika
+import json
+# Load environment variables
+
 
 load_dotenv()
 
@@ -28,20 +32,39 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-def persist_certificate(filename, category):
+def persist_certificate(filename, file_path, category):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         query = """
-            INSERT INTO parsed_pdfs (filename, category)
-            VALUES (%s, %s)
+            INSERT INTO parsed_pdfs (filename, file_path, category)
+            VALUES (%s, %s, %s)
         """
-        cursor.execute(query, (filename, category))
+        cursor.execute(query, (filename, file_path, category))
         conn.commit()
         cursor.close()
         conn.close()
     except mysql.connector.Error as err:
         raise Exception(f"Database error: {err}")
+
+
+def publish_to_queue(filename, file_path, category):
+    connection = pika.BlockingConnection(pika.ConnectionParameters(os.getenv("RABBITMQ_HOST", "localhost")))
+    channel = connection.channel()
+    channel.queue_declare(queue='pdf_processing')
+
+    message = {
+        'file_path': file_path,
+        'filename': filename,
+        'category': category
+    }
+    channel.basic_publish(
+        exchange='',
+        routing_key='pdf_processing',
+        body=json.dumps(message)
+    )
+    connection.close()
+    print(f"Published {filename} to queue.")
 
 
 @app.route("/upload", methods=["POST"])
@@ -79,7 +102,9 @@ def upload_pdfs():
             # Instead of processing the PDF here, we will publish it to a message queue
             # For example, using RabbitMQ or any other message broker
             # publish_to_queue(temp_pdf_path)  # Placeholder for actual message queue publishing
-            persist_certificate(original_filename, category)
+            # process_pdf(temp_pdf_path, category)
+            persist_certificate(original_filename, temp_pdf_path, category)
+            publish_to_queue(original_filename, temp_pdf_path, category)
             successful_count += 1
 
         except Exception as e:
