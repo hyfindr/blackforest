@@ -28,6 +28,17 @@ jobs:
 
             cd /home/hacker
 
+            # Клонировать репозиторий, если не существует
+            if [ ! -d blackforest ]; then
+              echo "Cloning repository..."
+              git clone git@github.com:CyberSofa/blackforest.git
+            fi
+
+            cd blackforest
+
+            # Обеспечить правильный remote URL
+            git remote set-url origin git@github.com:CyberSofa/blackforest.git
+
             echo "Fetching latest code..."
             git fetch origin
             git reset --hard origin/main
