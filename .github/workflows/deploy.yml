@@ -1,4 +1,4 @@
-name: CI/CD - Deploy on push to main
+name: CI/CD - Deploy
 
 on:
   push:
@@ -12,36 +12,29 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Install SSH key
         run: |
           echo "${{ secrets.CI_CD }}" | tr -d '\r' > deploy_key
           chmod 600 deploy_key
 
-      - name: Deploy to remote server
+      - name: Sync project to remote server via rsync
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          rsync -az --delete -e "ssh -i deploy_key -o StrictHostKeyChecking=no" ./ $SSH_USER@$SSH_HOST:/home/hacker/blackforest/
+
+      - name: Rebuild Docker on remote server
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           ssh -i deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
             set -e
-
-            cd /home/hacker
-
-            # Клонировать репозиторий, если не существует
-            if [ ! -d blackforest ]; then
-              echo "Cloning repository..."
-              git clone git@github.com:CyberSofa/blackforest.git
-            fi
-
-            cd blackforest
-
-            # Обеспечить правильный remote URL
-            git remote set-url origin git@github.com:CyberSofa/blackforest.git
-
-            echo "Fetching latest code..."
-            git fetch origin
-            git reset --hard origin/main
+            cd /home/hacker/blackforest
 
             echo "Rebuilding Docker services..."
             docker compose down
