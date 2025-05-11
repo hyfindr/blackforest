@@ -15,7 +15,7 @@ jobs:
 
       - name: Install SSH key
         run: |
-          echo "${{ secrets.CI_CD }}" > deploy_key
+          echo "${{ secrets.CI_CD }}" | tr -d '\r' > deploy_key
           chmod 600 deploy_key
 
       - name: Deploy to remote server
@@ -25,8 +25,14 @@ jobs:
         run: |
           ssh -i deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
             set -e
-            cd /home/hacker/app/dev/aipd-search-ui
-            git pull origin main
+
+            cd /home/hacker/blackforest
+
+            echo "Fetching latest code..."
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "Rebuilding Docker services..."
             docker compose down
             docker compose pull
             docker compose up -d --remove-orphans
