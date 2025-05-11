@@ -93,13 +93,14 @@ Text:
 Valid grade names:
 {chr(10).join(f"- {name}" for name in material_list)}
 
-Return the best matching grade name as a CSV string, like: \"S355J2\"
+Return the best matching grade name as a CSV string, like: "S355J2"
 """
     try:
         response = call_openrouter_agent(prompt, "You are an expert in identifying material grades in test report documents.")
         print("🤖 Material Match Response:", response)
-        matched_name = response.strip().strip('"')
+        matched_name = (response)
         grade_id = get_material_id_by_grade(matched_name)
+        print
         return matched_name, grade_id
     except Exception as e:
         print("❌ LLM material match failed:", e)
@@ -139,8 +140,8 @@ Please extract only the following chemical properties:
 {prop_str}
 
 Return a JSON list of objects, each with:
-- \"property_name\"
-- \"value\"
+- "property_name"
+- "value"
 """
     return call_openrouter_agent(prompt, "You are an expert in extracting chemical composition values from material test reports. Respond in JSON format.")
 
@@ -160,8 +161,8 @@ Please extract only the following mechanical properties:
 {prop_str}
 
 Return a JSON list of objects, each with:
-- \"property_name\"
-- \"value\"
+- "property_name"
+- "value"
 """
     return call_openrouter_agent(prompt, "You are an expert in extracting mechanical test values from engineering reports. Respond in JSON format.")
 
@@ -172,31 +173,95 @@ def clean_json_text(text):
 # === Value Helpers ===
 def extract_value_range(value):
     if isinstance(value, dict):
-        def to_float(val):
-            try:
-                return float(val.replace(",", ".")) if val and val != "-" else None
-            except:
-                return None
-        return to_float(value.get("min")), to_float(value.get("max"))
+        try:
+            min_val = value.get("min")
+            max_val = value.get("max")
+            return float(min_val) if min_val is not None else None, \
+                   float(max_val) if max_val is not None else None
+        except:
+            return None, None
 
     if isinstance(value, (int, float)):
         return float(value), float(value)
 
     if isinstance(value, str):
         value = value.replace(",", ".")
-        numbers = re.findall(r"[-+]?\d*\.\d+|\d+", value)
-        if len(numbers) >= 2:
-            return float(numbers[0]), float(numbers[1])
-        elif len(numbers) == 1:
-            return float(numbers[0]), float(numbers[0])
-
+        found = re.findall(r"[-+]?\d*\.\d+|\d+", value)
+        if len(found) == 1:
+            val = float(found[0])
+            return val, val
+        elif len(found) >= 2:
+            return float(found[0]), float(found[1])
     return None, None
+
+
+def parse_diameter_range(diameter_text):
+    if pd.isna(diameter_text): return (None, None)
+    text = diameter_text.strip().replace(" ", "")
+    try:
+        if ">" in text and "≤" in text:
+            parts = text.split(",")
+            return tuple(float(p.replace(">", "").replace("≤", "").strip()) for p in parts)
+        elif text.startswith("≤"):
+            return (None, float(text.replace("≤", "").strip()))
+        elif text.startswith(">"):
+            return (float(text.replace(">", "").strip()), None)
+    except:
+        return (None, None)
+    return (None, None)
+
+def normalize_mechanical_data(mech_data):
+    normalized = []
+    for item in mech_data:
+        values = item["value"]
+        numbers = []
+
+        # Case 1: List of numbers or dicts
+        if isinstance(values, list):
+            for v in values:
+                if isinstance(v, dict):
+                    for val in v.values():
+                        if isinstance(val, (int, float)):
+                            numbers.append(val)
+                        elif isinstance(val, str):
+                            try:
+                                numbers.append(float(re.findall(r"[-+]?\d*\.\d+|\d+", val.replace(",", "."))[0]))
+                            except:
+                                continue
+                elif isinstance(v, (int, float)):
+                    numbers.append(v)
+                elif isinstance(v, str):
+                    try:
+                        numbers.append(float(re.findall(r"[-+]?\d*\.\d+|\d+", v.replace(",", "."))[0]))
+                    except:
+                        continue
+
+        # Case 2: Human-readable sentence like "Values range from X to Y"
+        elif isinstance(values, str):
+            found = re.findall(r"[-+]?\d*\.\d+|\d+", values.replace(",", "."))
+            if len(found) >= 2:
+                try:
+                    numbers = [float(found[0]), float(found[1])]
+                except:
+                    continue
+
+        if numbers:
+            val_min = min(numbers)
+            val_max = max(numbers)
+            normalized.append({
+                "property_name": item["property_name"],
+                "value": f"{val_min} - {val_max}"
+            })
+
+    return normalized
+
 
 # === Comparators ===
 def compare_chemical_properties(sample_data, grade_id):
     conn = pymysql.connect(**DB_CONFIG)
     df = pd.read_sql("SELECT element, min_value, max_value FROM chemical_properties WHERE grade_id = %s", conn, params=[grade_id])
     conn.close()
+
     df['min_value'] = pd.to_numeric(df['min_value'], errors='coerce')
     df['max_value'] = pd.to_numeric(df['max_value'], errors='coerce')
 
@@ -206,55 +271,59 @@ def compare_chemical_properties(sample_data, grade_id):
     for item in sample_data:
         name = item["property_name"]
         val_min, val_max = extract_value_range(item["value"])
-        value = val_min if val_min is not None else val_max
+        row = df[df["element"] == name]
 
-        if value is None:
-            result = "INVALID VALUE"
-            min_val = max_val = None
+        if val_min is None and val_max is None:
+            result = "INVALID SAMPLE VALUE"
+            std_min = std_max = None
+            all_within_range = False
+        elif row.empty:
+            result = "ELEMENT NOT FOUND IN STANDARD"
+            std_min = std_max = None
             all_within_range = False
         else:
-            row = df[df["element"] == name]
-            if row.empty:
-                result = "ELEMENT NOT FOUND IN STANDARD"
-                min_val = max_val = None
-                all_within_range = False
-            else:
-                min_val = row.iloc[0]["min_value"]
-                max_val = row.iloc[0]["max_value"]
+            std_min = row.iloc[0]["min_value"]
+            std_max = row.iloc[0]["max_value"]
 
-                if pd.notna(min_val) and pd.notna(max_val):
-                    result = "WITHIN RANGE" if min_val <= value <= max_val else "NOT WITHIN RANGE"
-                    if not (min_val <= value <= max_val):
-                        all_within_range = False
-                elif pd.isna(min_val) and pd.notna(max_val):
-                    result = "WITHIN RANGE" if value <= max_val else "NOT WITHIN RANGE"
-                    if value > max_val:
-                        all_within_range = False
-                elif pd.notna(min_val) and pd.isna(max_val):
-                    result = "WITHIN RANGE" if value >= min_val else "NOT WITHIN RANGE"
-                    if value < min_val:
-                        all_within_range = False
-                else:
-                    result = "UNKNOWN CASE"
+            if pd.notna(std_min) and pd.notna(std_max):
+                if val_min >= std_min and val_max <= std_max:
+                    result = "WITHIN RANGE"
+                elif val_max < std_min or val_min > std_max:
+                    result = "NOT WITHIN RANGE"
                     all_within_range = False
+                else:
+                    result = "PARTIALLY WITHIN RANGE"
+                    all_within_range = False
+            elif pd.isna(std_min) and pd.notna(std_max):
+                if val_max <= std_max:
+                    result = "WITHIN RANGE"
+                else:
+                    result = "NOT WITHIN RANGE"
+                    all_within_range = False
+            elif pd.notna(std_min) and pd.isna(std_max):
+                if val_min >= std_min:
+                    result = "WITHIN RANGE"
+                else:
+                    result = "NOT WITHIN RANGE"
+                    all_within_range = False
+            else:
+                result = "NO STANDARD LIMITS"
+                all_within_range = False
 
         results.append({
             "element": name,
-            "sample_value": value,
-            "min_value": min_val,
-            "max_value": max_val,
+            "sample_value": f"{val_min} - {val_max}" if val_min is not None else "None",
+            "min_value": std_min,
+            "max_value": std_max,
             "result": result
         })
 
     return pd.DataFrame(results), all_within_range
 
+
 def compare_mechanical_properties(sample_data, grade_id):
     conn = pymysql.connect(**DB_CONFIG)
-    df = pd.read_sql("""
-        SELECT property_name, min_value, max_value
-        FROM mechanical_properties
-        WHERE grade_id = %s
-    """, conn, params=[grade_id])
+    df = pd.read_sql("SELECT property_name, min_value, max_value FROM mechanical_properties WHERE grade_id = %s", conn, params=[grade_id])
     conn.close()
 
     df['min_value'] = pd.to_numeric(df['min_value'], errors='coerce')
@@ -266,18 +335,22 @@ def compare_mechanical_properties(sample_data, grade_id):
     for item in sample_data:
         prop = item["property_name"]
         val_min, val_max = extract_value_range(item["value"])
-        row = df[df["property_name"] == prop]
+        applicable_rows = df[df["property_name"] == prop]
 
-        if row.empty:
-            result = "NOT WITHIN RANGE"
+        if val_min is None and val_max is None:
+            result = "INVALID SAMPLE VALUE"
+            std_min = std_max = None
+            all_within_range = False
+        elif applicable_rows.empty:
+            result = "NOT FOUND IN STANDARD"
             std_min = std_max = None
             all_within_range = False
         else:
-            std_min = row.iloc[0]["min_value"]
-            std_max = row.iloc[0]["max_value"]
+            row = applicable_rows.iloc[0]
+            std_min, std_max = row["min_value"], row["max_value"]
 
             if pd.notna(std_min) and pd.notna(std_max):
-                if std_min <= val_min and val_max <= std_max:
+                if val_min >= std_min and val_max <= std_max:
                     result = "WITHIN RANGE"
                 elif val_max < std_min or val_min > std_max:
                     result = "NOT WITHIN RANGE"
@@ -286,15 +359,19 @@ def compare_mechanical_properties(sample_data, grade_id):
                     result = "PARTIALLY WITHIN RANGE"
                     all_within_range = False
             elif pd.isna(std_min) and pd.notna(std_max):
-                result = "WITHIN RANGE" if val_max <= std_max else "NOT WITHIN RANGE"
-                if val_max > std_max:
+                if val_max <= std_max:
+                    result = "WITHIN RANGE"
+                else:
+                    result = "NOT WITHIN RANGE"
                     all_within_range = False
             elif pd.notna(std_min) and pd.isna(std_max):
-                result = "WITHIN RANGE" if val_min >= std_min else "NOT WITHIN RANGE"
-                if val_min < std_min:
+                if val_min >= std_min:
+                    result = "WITHIN RANGE"
+                else:
+                    result = "NOT WITHIN RANGE"
                     all_within_range = False
             else:
-                result = "UNKNOWN CASE"
+                result = "NO STANDARD LIMITS"
                 all_within_range = False
 
         results.append({
@@ -332,6 +409,7 @@ def extract_and_compare(pdf_id):
     try:
         chem_data = json.loads(clean_json_text(chem_json))
         mech_data = json.loads(clean_json_text(mech_json))
+        mech_data = normalize_mechanical_data(mech_data)
     except json.JSONDecodeError as e:
         print("❌ Failed to parse JSON:", e)
         return None
