@@ -50,16 +50,15 @@ def save_texts_to_database(filename, category, ai_extracted_content, pdf_binary)
                 filename VARCHAR(255) NOT NULL,
                 category VARCHAR(255),
                 file_data LONGBLOB,
-                raw_extractions LONGTEXT,
                 ai_extracted_data LONGTEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
         """)
         cursor.execute("""
-            INSERT INTO parsed_pdfs (filename, category, file_data, raw_extractions, ai_extracted_data)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (filename, category, pdf_binary, "", ai_extracted_content))
+            INSERT INTO parsed_pdfs (filename, category, file_data, ai_extracted_data)
+            VALUES (%s, %s, %s, %s)
+        """, (filename, category, pdf_binary, ai_extracted_content))
         conn.commit()
         logging.info(f"💾 Saved to DB: {filename} in category: {category}")
     except mysql.connector.Error as err:
