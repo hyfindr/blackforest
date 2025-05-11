@@ -1,0 +1,114 @@
+/* ======================
+   General Table Layout
+========================= */
+.validated-table {
+    background-color: #fff;
+    font-size: 0.875rem;
+}
+
+/* ======================
+   Search Input
+========================= */
+.search-input {
+    min-width: 250px;
+    max-width: 100%;
+    border-radius: 0 !important;
+}
+
+/* ======================
+   Status Badges
+========================= */
+.status-pill {
+    padding: 0.3rem 0.6rem;
+    border-radius: 0;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.status-pill.passed {
+    background-color: #28a745; /* Green - Compliant */
+    color: #fff;
+}
+
+.status-pill.failed {
+    background-color: #dc3545; /* Red - Not Compliant */
+    color: #fff;
+}
+
+.status-pill.pending {
+    background-color: #ffc107; /* Yellow - Validating */
+    color: #000;
+}
+
+/* ======================
+   Buttons
+========================= */
+button.btn-outline-dark {
+    border-radius: 0;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.6rem;
+    text-transform: uppercase;
+}
+
+/* ======================
+   Alert Messages
+========================= */
+.custom-alert {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+/* ======================
+   React-Select (Dropdown)
+========================= */
+.react-select__control {
+    border-radius: 0 !important;
+    font-size: 0.875rem;
+    border-color: #ced4da;
+    min-width: 180px;
+}
+
+.react-select__control--is-focused {
+    box-shadow: none;
+    border-color: #000;
+}
+
+.react-select__menu {
+    border-radius: 0 !important;
+    font-size: 0.875rem;
+}
+
+.react-select__option {
+    font-size: 0.875rem;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.react-select__option--is-selected {
+    background-color: #e0ac00 !important; /* Darker Yellow/Gold */
+    color: #fff !important;
+}
+
+.react-select__option--is-focused {
+    background-color: #fff8dc !important; /* Lighter contrast */
+    color: #000 !important;
+}
+
+/* ======================
+   Responsive Table Support
+========================= */
+@media (max-width: 768px) {
+    .validated-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

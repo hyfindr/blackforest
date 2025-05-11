@@ -1,59 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Spinner, Alert } from "react-bootstrap";
-import CertificateResult from "./CertificateResult";
 import "./FileUpload.css";
 
-const FileUpload = () => {
-    const [files, setFiles] = useState([]); // file -> files
+const FileUpload = ({ selectedCategory }) => {
+    const [files, setFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [statusMessage, setStatusMessage] = useState(null);
-    const [certificateData, setCertificateData] = useState(null);
+    const [lastCategory, setLastCategory] = useState(selectedCategory);
+
+    // Warn or reset if category changes after file selection
+    useEffect(() => {
+        if (files.length > 0 && selectedCategory !== lastCategory) {
+            setFiles([]);
+            setStatusMessage({
+                type: "warning",
+                text: "Category changed. Please re-upload your files.",
+            });
+            setLastCategory(selectedCategory);
+        } else {
+            setLastCategory(selectedCategory);
+        }
+    }, [selectedCategory]);
 
     const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
+        const selectedFiles = Array.from(e.target.files);
+        setFiles(selectedFiles);
         setStatusMessage(null);
-        setCertificateData(null);
+
+        // Clear input value to allow reselecting the same file
+        e.target.value = "";
     };
 
-    const handleUpload = async () => {
-        if (!file) {
-            setStatusMessage({
-                type: "danger",
-                text: "Please select a file first.",
-            });
-            return;
-        }
+    const handleValidate = async () => {
+        if (files.length === 0 || !selectedCategory) return;
 
         setUploading(true);
         setStatusMessage(null);
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            console.log("Uploading file:", file.name);
+            const formData = new FormData();
+            files.forEach((file) => formData.append("file[]", file));
+            formData.append("category", selectedCategory);
 
-            // Dummy certificate data (to simulate backend response)
-            const dummyData = {
-                supplier: "ABC Supplies GmbH",
-                certificateId: "CERT-2025-07",
-                expiryDate: "2025-12-31",
-                compliance: true,
-                warnings: ["Slight deviation in tensile strength test"],
-                missingFields: [],
-            };
+            const res = await fetch("http://localhost:5000/upload", {
+                method: "POST",
+                body: formData,
+            });
 
-            setCertificateData(dummyData);
+            if (!res.ok) throw new Error("Validation failed");
+
+            const result = await res.json();
             setStatusMessage({
                 type: "success",
-                text: "File uploaded successfully!",
+                text:
+                    result.message ||
+                    `${files.length} file(s) sent for validation.`,
             });
-        } catch (error) {
+        } catch (err) {
             setStatusMessage({
                 type: "danger",
-                text: "Upload failed. Please try again.",
+                text: "Validation failed. Please try again.",
             });
         } finally {
             setUploading(false);
-            setFile(null);
+            setFiles([]);
         }
     };
 
@@ -69,10 +79,18 @@ const FileUpload = () => {
                 multiple
             />
 
+            {files.length > 0 && (
+                <ul className="mb-3 small text-muted ps-3">
+                    {files.map((file, index) => (
+                        <li key={index}>{file.name}</li>
+                    ))}
+                </ul>
+            )}
+
             <Button
-                className="category-btn active btn btn-custom-selected"
-                onClick={handleUpload}
-                disabled={uploading}
+                className="btn btn-custom-selected"
+                onClick={handleValidate}
+                disabled={files.length === 0 || uploading}
             >
                 {uploading ? (
                     <>
@@ -84,10 +102,10 @@ const FileUpload = () => {
                             aria-hidden="true"
                             className="me-2 text-dark"
                         />
-                        Uploading...
+                        Validating...
                     </>
                 ) : (
-                    "Upload Document"
+                    "Validate"
                 )}
             </Button>
 
@@ -96,8 +114,6 @@ const FileUpload = () => {
                     {statusMessage.text}
                 </Alert>
             )}
-
-            {certificateData && <CertificateResult data={certificateData} />}
         </div>
     );
 };

@@ -11,7 +11,7 @@
     letter-spacing: 0.05em;
 }
 
-/* Tüm butonlar için ortak stil */
+/* For all buttons */
 .category-btn {
     border-radius: 0 !important;
     font-weight: 600;
@@ -23,14 +23,15 @@
     transition: background-color 0.2s ease;
 }
 
-/* Hover efekti */
+/* Hover effect */
 .category-btn:hover {
     background-color: #eaeaea;
     color: black;
 }
 
-/* Seçili (aktif) buton */
-.category-btn.active {
+/* Selected (active) button */
+.category-btn.active,
+.btn-custom-selected {
     background-color: #ffd700 !important;
     color: black !important;
     border-color: #ffd700 !important;

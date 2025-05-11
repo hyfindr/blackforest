@@ -86,3 +86,32 @@
     box-shadow: none !important;
     outline: none !important;
 }
+
+.btn-custom-selected {
+    background-color: #ffd700;
+    color: black;
+    border-radius: 0;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.95rem;
+    border: none;
+    transition: background-color 0.2s ease;
+}
+
+.btn-custom-selected:hover,
+.btn-custom-selected:focus,
+.btn-custom-selected:active {
+    background-color: #e6c200 !important;
+    color: black !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none;
+}
+
+.btn-custom-selected:disabled {
+    background-color: #f0e68c !important;
+    color: #888 !important;
+    opacity: 0.7 !important;
+    cursor: not-allowed !important;
+}
